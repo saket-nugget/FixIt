@@ -12,6 +12,7 @@ export default function Navbar() {
         { path: '/scan', label: 'Scanner', icon: 'videocam' },
         { path: '/results', label: 'Results', icon: 'analytics' },
         { path: '/history', label: 'History', icon: 'history' },
+        { path: '/users', label: 'Users', icon: 'group' },
         { path: '/chat', label: 'Mechanic AI', icon: 'smart_toy' },
     ];
 
