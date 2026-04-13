@@ -7,6 +7,7 @@ import Chat from './pages/Chat';
 import History from './pages/History';
 import Settings from './pages/Settings';
 import Manuals from './pages/Manuals';
+import Users from './pages/Users';
 
 function App() {
     return (
@@ -19,6 +20,7 @@ function App() {
                 <Route path="/history" element={<History />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/manuals" element={<Manuals />} />
+                <Route path="/users" element={<Users />} />
             </Routes>
         </Router>
     );

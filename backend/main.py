@@ -2,8 +2,13 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine, Base
-from crud import create_user, get_user, get_user_by_email, get_all_users, update_user, delete_user
+from crud import (
+    create_user, get_user, get_user_by_email, get_all_users, update_user, delete_user,
+    create_repair_log, get_user_repairs
+)
 from pydantic import BaseModel
+from datetime import datetime
+from typing import Optional
 
 
 app = FastAPI(title="FixIt.API")
@@ -26,6 +31,22 @@ class UserResponse(BaseModel):
     id:int
     email:str
     username:str
+    class Config:
+        from_attributes=True
+
+class RepairLogCreate(BaseModel):
+    user_id: int
+    item_name: str
+    diagnosis: str
+    status: Optional[str] = "Pending"
+
+class RepairLogResponse(BaseModel):
+    id: int
+    user_id: int
+    item_name: str
+    diagnosis: str
+    status: str
+    created_at: datetime
     class Config:
         from_attributes=True
 
@@ -72,3 +93,18 @@ def api_delete_user(user_id:int,db:Session=Depends(get_db)):
     if not deleted:
         raise HTTPException(status_code=404,detail="User not found")
     return {"message":"User deleted successfully"}
+
+# REPAIR LOG ROUTES
+@app.post("/repairs/", response_model=RepairLogResponse)
+def api_create_repair(repair: RepairLogCreate, db: Session = Depends(get_db)):
+    return create_repair_log(
+        db, 
+        user_id=repair.user_id, 
+        item_name=repair.item_name, 
+        diagnosis=repair.diagnosis, 
+        status=repair.status
+    )
+
+@app.get("/repairs/{user_id}", response_model=list[RepairLogResponse])
+def api_get_user_repairs(user_id: int, db: Session = Depends(get_db)):
+    return get_user_repairs(db, user_id=user_id)

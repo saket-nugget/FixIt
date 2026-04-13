@@ -1,12 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { CONFIG } from '../config/config';
 
 export default function Results() {
     const navigate = useNavigate();
     const location = useLocation();
     const fixesRef = useRef(null);
     const [diagnosis, setDiagnosis] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
     const videoUrl = location.state?.videoUrl;
 
     useEffect(() => {
@@ -19,6 +22,35 @@ export default function Results() {
             }
         }
     }, []);
+
+    const saveToHistory = async () => {
+        if (!diagnosis || saving || saved) return;
+        
+        setSaving(true);
+        try {
+            const response = await fetch(`${CONFIG.BACKEND_URL}/repairs/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: 1, // Hardcoded for now until Auth is implemented
+                    item_name: diagnosis.diagnosis.split(' ')[0] + " Unit", // Simple heuristic
+                    diagnosis: JSON.stringify(diagnosis),
+                    status: "Pending"
+                }),
+            });
+
+            if (!response.ok) throw new Error("Failed to save repair log");
+            
+            setSaved(true);
+        } catch (err) {
+            console.error("Error saving log:", err);
+            alert("Failed to save to history. Check console for details.");
+        } finally {
+            setSaving(false);
+        }
+    };
 
     if (!diagnosis) {
         return (
@@ -166,6 +198,22 @@ export default function Results() {
                                     <span className="material-symbols-outlined">smart_toy</span>
                                     Ask Mechanic AI
                                 </Link>
+                            </div>
+                            <div className="mt-4">
+                                <button
+                                    onClick={saveToHistory}
+                                    disabled={saving || saved}
+                                    className={`w-full font-bold py-3 px-6 rounded text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                                        saved 
+                                        ? "bg-green-500/20 border border-green-500/50 text-green-500 cursor-default" 
+                                        : "bg-white/5 border border-white/20 text-white hover:bg-white/10 active:scale-[0.98]"
+                                    }`}
+                                >
+                                    <span className="material-symbols-outlined">
+                                        {saved ? "check_circle" : saving ? "sync" : "save"}
+                                    </span>
+                                    {saved ? "Saved to History" : saving ? "Saving..." : "Save to Repair History"}
+                                </button>
                             </div>
                         </div>
                     </section>

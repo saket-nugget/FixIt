@@ -1,6 +1,6 @@
 from database import engine, Base
 # Import the models so Base knows about them when we create tables
-from models import User
+from models import User, RepairLog
 
 def create_tables():
     print("Creating database tables...")

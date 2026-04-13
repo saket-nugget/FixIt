@@ -1,20 +1,35 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
+import { CONFIG } from '../config/config';
 
 export default function History() {
     const navigate = useNavigate();
     const [history, setHistory] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const storedHistory = localStorage.getItem('fixit_history');
-        if (storedHistory) {
+        const fetchHistory = async () => {
             try {
-                setHistory(JSON.parse(storedHistory).reverse()); // Newest first
-            } catch (e) {
-                console.error("Failed to parse history", e);
+                const response = await fetch(`${CONFIG.BACKEND_URL}/repairs/1`);
+                if (!response.ok) throw new Error("Failed to fetch history");
+                const data = await response.json();
+                
+                // Parse the stringified diagnosis JSON for each item
+                const parsedHistory = data.map(item => {
+                    try {
+                        const parsed = JSON.parse(item.diagnosis);
+                        return { ...parsed, dbId: item.id, timestamp: item.created_at, status: item.status, item_name: item.item_name };
+                    } catch (e) {
+                        return { diagnosis: item.diagnosis, dbId: item.id, timestamp: item.created_at, status: item.status, item_name: item.item_name };
+                    }
+                });
+                
+                setHistory(parsedHistory);
+            } catch (err) {
+                console.error("Fetch error:", err);
+            } finally {
+                setLoading(false);
             }
-        }
+        };
+        fetchHistory();
     }, []);
 
     const handleClearHistory = () => {
