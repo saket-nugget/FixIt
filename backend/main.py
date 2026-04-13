@@ -97,6 +97,11 @@ def api_delete_user(user_id:int,db:Session=Depends(get_db)):
 # REPAIR LOG ROUTES
 @app.post("/repairs/", response_model=RepairLogResponse)
 def api_create_repair(repair: RepairLogCreate, db: Session = Depends(get_db)):
+    # Verify user exists first to prevent 500 ForeignKey errors
+    user = get_user(db, repair.user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User with ID {repair.user_id} not found. Please create a user first.")
+    
     return create_repair_log(
         db, 
         user_id=repair.user_id, 
