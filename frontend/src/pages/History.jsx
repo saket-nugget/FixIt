@@ -1,3 +1,6 @@
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 import { CONFIG } from '../config/config';
 
 export default function History() {
@@ -8,7 +11,20 @@ export default function History() {
     useEffect(() => {
         const fetchHistory = async () => {
             try {
-                const response = await fetch(`${CONFIG.BACKEND_URL}/repairs/1`);
+                // 1. First, find a valid user ID (just like we do on the Results page)
+                const usersResponse = await fetch(`${CONFIG.BACKEND_URL}/users/`);
+                if (!usersResponse.ok) throw new Error("Could not fetch user registry");
+                const users = await usersResponse.json();
+
+                if (users.length === 0) {
+                    setLoading(false);
+                    return;
+                }
+
+                const activeUserId = users[0].id;
+
+                // 2. Fetch history for that specific user
+                const response = await fetch(`${CONFIG.BACKEND_URL}/repairs/${activeUserId}`);
                 if (!response.ok) throw new Error("Failed to fetch history");
                 const data = await response.json();
                 
