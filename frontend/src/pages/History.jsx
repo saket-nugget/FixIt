@@ -36,26 +36,6 @@ export default function History() {
         };
         fetchHistory();
     }, []);
-                
-                // Parse the stringified diagnosis JSON for each item
-                const parsedHistory = data.map(item => {
-                    try {
-                        const parsed = JSON.parse(item.diagnosis);
-                        return { ...parsed, dbId: item.id, timestamp: item.created_at, status: item.status, item_name: item.item_name };
-                    } catch (e) {
-                        return { diagnosis: item.diagnosis, dbId: item.id, timestamp: item.created_at, status: item.status, item_name: item.item_name };
-                    }
-                });
-                
-                setHistory(parsedHistory);
-            } catch (err) {
-                console.error("Fetch error:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchHistory();
-    }, []);
 
     const handleClearHistory = () => {
         if (window.confirm("Are you sure you want to clear all history?")) {
