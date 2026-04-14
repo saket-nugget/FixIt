@@ -2,15 +2,15 @@ from sqlalchemy.orm import Session
 from models import User
 
 # CREATE - Add a new user to the database
-def create_user(db: Session, email: str, username: str):
-    new_user = User(email=email, username=username)
+def create_user(db: Session, user_id: str, email: str, username: str):
+    new_user = User(id=user_id, email=email, username=username)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return new_user
 
 # READ - Get a user by their ID
-def get_user(db: Session, user_id: int):
+def get_user(db: Session, user_id: str):
     return db.query(User).filter(User.id == user_id).first()
 
 # READ - Get a user by their email
@@ -22,7 +22,7 @@ def get_all_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(User).offset(skip).limit(limit).all()
 
 # UPDATE - Update a user's username
-def update_user(db: Session, user_id: int, new_username: str):
+def update_user(db: Session, user_id: str, new_username: str):
     user = db.query(User).filter(User.id == user_id).first()
     if user:
         user.username = new_username
@@ -31,7 +31,7 @@ def update_user(db: Session, user_id: int, new_username: str):
     return user
 
 # DELETE - Remove a user
-def delete_user(db: Session, user_id: int):
+def delete_user(db: Session, user_id: str):
     if user:
         db.delete(user)
         db.commit()
@@ -40,7 +40,7 @@ def delete_user(db: Session, user_id: int):
 # REPAIR LOGS
 from models import RepairLog
 
-def create_repair_log(db: Session, user_id: int, item_name: str, diagnosis: str, status: str = "Pending"):
+def create_repair_log(db: Session, user_id: str, item_name: str, diagnosis: str, status: str = "Pending"):
     new_repair = RepairLog(
         user_id=user_id,
         item_name=item_name,
@@ -52,13 +52,13 @@ def create_repair_log(db: Session, user_id: int, item_name: str, diagnosis: str,
     db.refresh(new_repair)
     return new_repair
 
-def get_user_repairs(db: Session, user_id: int):
+def get_user_repairs(db: Session, user_id: str):
     return db.query(RepairLog).filter(RepairLog.user_id == user_id).order_by(RepairLog.created_at.desc()).all()
 
 # MANUALS
 from models import Manual
 
-def get_manuals(db: Session, search: str = None, category: str = None, user_id: int = None):
+def get_manuals(db: Session, search: str = None, category: str = None, user_id: str = None):
     query = db.query(Manual)
     
     # 1. Logic: Include default manuals OR user-specific manuals
@@ -75,7 +75,7 @@ def get_manuals(db: Session, search: str = None, category: str = None, user_id: 
         
     return query.order_by(Manual.is_default.desc(), Manual.created_at.desc()).all()
 
-def create_manual(db: Session, title: str, category: str, content: str, user_id: int = None, is_default: int = 0):
+def create_manual(db: Session, title: str, category: str, content: str, user_id: str = None, is_default: int = 0):
     new_manual = Manual(
         title=title,
         category=category,

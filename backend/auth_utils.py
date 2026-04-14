@@ -35,5 +35,15 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             raise credentials_exception
             
         return {"id": user_id, "email": email}
-    except JWTError:
+    except jwt.ExpiredSignatureError:
+        print("Auth Error: Token has expired")
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.JWTClaimsError:
+        print("Auth Error: Invalid claims (check audience/issuer)")
+        raise HTTPException(status_code=401, detail="Invalid token claims")
+    except JWTError as e:
+        print(f"Auth Error: {str(e)}")
+        raise credentials_exception
+    except Exception as e:
+        print(f"Auth Error (Unexpected): {str(e)}")
         raise credentials_exception
