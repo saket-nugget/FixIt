@@ -4,11 +4,13 @@ from sqlalchemy.orm import Session
 from database import SessionLocal, engine, Base
 from crud import (
     create_user, get_user, get_user_by_email, get_all_users, update_user, delete_user,
-    create_repair_log, get_user_repairs
+    create_repair_log, get_user_repairs,
+    get_manuals, create_manual, delete_manual
 )
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
+from auth_utils import get_current_user
 
 
 app = FastAPI(title="FixIt.API")
@@ -23,26 +25,46 @@ app.add_middleware(
 )
 
 class UserCreate(BaseModel):
-    email:str
-    username:str
+    id: str # Supabase UUID
+    email: str
+    username: str
+
 class UserUpdate(BaseModel):
-    username:str
+    username: str
+
 class UserResponse(BaseModel):
-    id:int
-    email:str
-    username:str
+    id: str
+    email: str
+    username: str
     class Config:
-        from_attributes=True
+        from_attributes = True
+
+class ManualCreate(BaseModel):
+    title: str
+    category: str
+    content: str
+    is_default: Optional[int] = 0
+
+class ManualResponse(BaseModel):
+    id: int
+    title: str
+    category: str
+    content: str
+    is_default: int
+    user_id: Optional[str]
+    created_at: datetime
+    class Config:
+        from_attributes = True
 
 class RepairLogCreate(BaseModel):
-    user_id: int
+    user_id: str
     item_name: str
     diagnosis: str
     status: Optional[str] = "Pending"
 
 class RepairLogResponse(BaseModel):
     id: int
-    user_id: int
+    user_id: str
     item_name: str
     diagnosis: str
     status: str
@@ -96,12 +118,15 @@ def api_delete_user(user_id:int,db:Session=Depends(get_db)):
 
 # REPAIR LOG ROUTES
 @app.post("/repairs/", response_model=RepairLogResponse)
-def api_create_repair(repair: RepairLogCreate, db: Session = Depends(get_db)):
-    # Verify user exists first to prevent 500 ForeignKey errors
-    user = get_user(db, repair.user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail=f"User with ID {repair.user_id} not found. Please create a user first.")
-    
+def api_create_repair(
+    repair: RepairLogCreate, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    # Ensure user ID in request matches current authenticated user ID
+    if repair.user_id != current_user["id"]:
+         raise HTTPException(status_code=403, detail="Not authorized to save for another user")
+         
     return create_repair_log(
         db, 
         user_id=repair.user_id, 
@@ -111,5 +136,48 @@ def api_create_repair(repair: RepairLogCreate, db: Session = Depends(get_db)):
     )
 
 @app.get("/repairs/{user_id}", response_model=list[RepairLogResponse])
-def api_get_user_repairs(user_id: int, db: Session = Depends(get_db)):
+def api_get_user_repairs(
+    user_id: str, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    if user_id != current_user["id"]:
+         raise HTTPException(status_code=403, detail="Not authorized")
+         
     return get_user_repairs(db, user_id=user_id)
+
+# MANUAL ROUTES
+@app.get("/manuals/", response_model=List[ManualResponse])
+def api_get_manuals(
+    search: Optional[str] = None, 
+    category: Optional[str] = None, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    return get_manuals(db, search=search, category=category, user_id=current_user["id"])
+
+@app.post("/manuals/", response_model=ManualResponse)
+def api_create_manual(
+    manual: ManualCreate, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    return create_manual(
+        db, 
+        title=manual.title, 
+        category=manual.category, 
+        content=manual.content, 
+        user_id=current_user["id"],
+        is_default=manual.is_default
+    )
+
+@app.delete("/manuals/{manual_id}")
+def api_delete_manual(
+    manual_id: int, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    success = delete_manual(db, manual_id=manual_id, user_id=current_user["id"])
+    if not success:
+        raise HTTPException(status_code=404, detail="Manual not found or not authorized to delete")
+    return {"status": "success"}

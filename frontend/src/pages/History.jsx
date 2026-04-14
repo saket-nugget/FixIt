@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { CONFIG } from '../config/config';
+import { apiFetch } from '../services/api';
+import { supabase } from '../supabaseClient';
 
 export default function History() {
     const navigate = useNavigate();
@@ -11,22 +12,30 @@ export default function History() {
     useEffect(() => {
         const fetchHistory = async () => {
             try {
-                // 1. First, find a valid user ID (just like we do on the Results page)
-                const usersResponse = await fetch(`${CONFIG.BACKEND_URL}/users/`);
-                if (!usersResponse.ok) throw new Error("Could not fetch user registry");
-                const users = await usersResponse.json();
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) return;
 
-                if (users.length === 0) {
-                    setLoading(false);
-                    return;
-                }
-
-                const activeUserId = users[0].id;
-
-                // 2. Fetch history for that specific user
-                const response = await fetch(`${CONFIG.BACKEND_URL}/repairs/${activeUserId}`);
-                if (!response.ok) throw new Error("Failed to fetch history");
-                const data = await response.json();
+                const data = await apiFetch(`/repairs/${session.user.id}`);
+                
+                // Parse the stringified diagnosis JSON for each item
+                const parsedHistory = data.map(item => {
+                    try {
+                        const parsed = JSON.parse(item.diagnosis);
+                        return { ...parsed, dbId: item.id, timestamp: item.created_at, status: item.status, item_name: item.item_name };
+                    } catch (e) {
+                        return { diagnosis: item.diagnosis, dbId: item.id, timestamp: item.created_at, status: item.status, item_name: item.item_name };
+                    }
+                });
+                
+                setHistory(parsedHistory);
+            } catch (err) {
+                console.error("Fetch error:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchHistory();
+    }, []);
                 
                 // Parse the stringified diagnosis JSON for each item
                 const parsedHistory = data.map(item => {

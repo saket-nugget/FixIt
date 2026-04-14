@@ -1,9 +1,28 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
 
 export default function Navbar() {
     const location = useLocation();
+    const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ?? null);
+        });
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    const handleSignOut = async () => {
+        await supabase.auth.signOut();
+        navigate('/auth');
+    };
 
     const isActive = (path) => location.pathname === path;
 
@@ -62,14 +81,18 @@ export default function Navbar() {
                         {/* User Profile (Desktop) */}
                         <div className="hidden md:flex items-center gap-3 pl-4 border-l border-white/10">
                             <div className="text-right">
-                                <p className="text-xs font-bold text-white leading-none">Technician</p>
-                                <div className="flex items-center justify-end gap-1 mt-1">
-                                    <span className="size-2 bg-green-500 rounded-full animate-pulse"></span>
-                                    <p className="text-[10px] text-[#ccb58e] leading-none uppercase tracking-wider">Online</p>
-                                </div>
+                                <p className="text-xs font-bold text-white leading-none truncate w-32">
+                                    {user?.user_metadata?.username || user?.email?.split('@')[0] || "Technician"}
+                                </p>
+                                <button 
+                                    onClick={handleSignOut}
+                                    className="text-[10px] text-[#f9a824] hover:text-white leading-none uppercase tracking-wider mt-1 transition-colors"
+                                >
+                                    Sign Out
+                                </button>
                             </div>
-                            <div className="size-9 rounded-full bg-gradient-to-br from-[#3a2e1e] to-[#231b0f] flex items-center justify-center border border-[#4a3a21] shadow-inner">
-                                <span className="material-symbols-outlined text-[#f9a824] text-sm">person</span>
+                            <div className="size-9 rounded-full bg-gradient-to-br from-[#3a2e1e] to-[#231b0f] flex items-center justify-center border border-[#4a3a21] shadow-inner text-[#f9a824]">
+                                <span className="material-symbols-outlined text-sm">person</span>
                             </div>
                         </div>
 
@@ -113,14 +136,24 @@ export default function Navbar() {
                         Settings
                     </Link>
 
-                    <div className="pt-4 mt-4 border-t border-white/10 flex items-center gap-3 px-2">
-                        <div className="size-10 rounded-full bg-[#3a2e1e] flex items-center justify-center border border-[#4a3a21]">
-                            <span className="material-symbols-outlined text-[#f9a824]">person</span>
+                    <div className="pt-4 mt-4 border-t border-white/10 flex items-center justify-between px-2">
+                        <div className="flex items-center gap-3">
+                            <div className="size-10 rounded-full bg-[#3a2e1e] flex items-center justify-center border border-[#4a3a21]">
+                                <span className="material-symbols-outlined text-[#f9a824]">person</span>
+                            </div>
+                            <div>
+                                <p className="text-white font-bold text-sm truncate w-24">
+                                    {user?.user_metadata?.username || user?.email?.split('@')[0] || "User"}
+                                </p>
+                                <p className="text-[10px] text-[#ccb58e] uppercase tracking-wider">Online</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-white font-bold text-sm">Guest Technician</p>
-                            <p className="text-xs text-[#ccb58e]">ID: #GUEST-8922</p>
-                        </div>
+                        <button 
+                            onClick={handleSignOut}
+                            className="bg-red-500/10 text-red-500 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-500/20 transition-colors"
+                        >
+                            Logout
+                        </button>
                     </div>
                 </div>
             </div>

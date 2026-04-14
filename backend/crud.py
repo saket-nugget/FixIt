@@ -54,3 +54,44 @@ def create_repair_log(db: Session, user_id: int, item_name: str, diagnosis: str,
 
 def get_user_repairs(db: Session, user_id: int):
     return db.query(RepairLog).filter(RepairLog.user_id == user_id).order_by(RepairLog.created_at.desc()).all()
+
+# MANUALS
+from models import Manual
+
+def get_manuals(db: Session, search: str = None, category: str = None, user_id: int = None):
+    query = db.query(Manual)
+    
+    # 1. Logic: Include default manuals OR user-specific manuals
+    if user_id:
+        query = query.filter((Manual.is_default == 1) | (Manual.user_id == user_id))
+    else:
+        query = query.filter(Manual.is_default == 1)
+        
+    if category and category != "All":
+        query = query.filter(Manual.category == category)
+        
+    if search:
+        query = query.filter(Manual.title.ilike(f"%{search}%"))
+        
+    return query.order_by(Manual.is_default.desc(), Manual.created_at.desc()).all()
+
+def create_manual(db: Session, title: str, category: str, content: str, user_id: int = None, is_default: int = 0):
+    new_manual = Manual(
+        title=title,
+        category=category,
+        content=content,
+        user_id=user_id,
+        is_default=is_default
+    )
+    db.add(new_manual)
+    db.commit()
+    db.refresh(new_manual)
+    return new_manual
+
+def delete_manual(db: Session, manual_id: int, user_id: str):
+    manual = db.query(Manual).filter(Manual.id == manual_id, Manual.user_id == user_id).first()
+    if manual:
+        db.delete(manual)
+        db.commit()
+        return True
+    return False

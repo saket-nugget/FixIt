@@ -28,37 +28,18 @@ export default function Results() {
         
         setSaving(true);
         try {
-            // 1. Fetch available users to find a valid ID
-            const usersResponse = await fetch(`${CONFIG.BACKEND_URL}/users/`);
-            if (!usersResponse.ok) throw new Error("Could not fetch user registry");
-            const users = await usersResponse.json();
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) throw new Error("No active session found");
 
-            if (users.length === 0) {
-                alert("No users found in database. Please create a user in the 'Users' registry first!");
-                setSaving(false);
-                return;
-            }
-
-            // 2. Use the first available user ID
-            const activeUserId = users[0].id;
-
-            const response = await fetch(`${CONFIG.BACKEND_URL}/repairs/`, {
+            await apiFetch('/repairs/', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify({
-                    user_id: activeUserId,
+                    user_id: session.user.id,
                     item_name: diagnosis.diagnosis.split(' ')[0] + " Unit",
                     diagnosis: JSON.stringify(diagnosis), 
                     status: "Pending"
                 }),
             });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || "Failed to save repair log");
-            }
             
             setSaved(true);
         } catch (err) {

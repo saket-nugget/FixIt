@@ -80,26 +80,27 @@ export default function Chat() {
         }
     };
 
-    const handleSaveManual = () => {
+    const handleSaveManual = async () => {
         if (!manualTitle.trim()) return;
 
-        const newManual = {
-            id: Date.now(),
-            title: manualTitle,
-            category: manualCategory,
-            date: new Date().toISOString().split('T')[0],
-            size: `${(JSON.stringify(messages).length / 1024).toFixed(1)} KB`,
-            icon: "menu_book", // Custom icon
-            content: messages,
-            isCustom: true
-        };
+        try {
+            await apiFetch('/manuals/', {
+                method: 'POST',
+                body: JSON.stringify({
+                    title: manualTitle,
+                    category: manualCategory,
+                    content: JSON.stringify(messages),
+                    is_default: 0
+                }),
+            });
 
-        const existingManuals = JSON.parse(localStorage.getItem('fixit_custom_manuals_v2') || '[]');
-        localStorage.setItem('fixit_custom_manuals_v2', JSON.stringify([...existingManuals, newManual]));
-
-        setIsSaving(false);
-        setManualTitle('');
-        alert("Manual saved successfully! You can find it in the Manuals library.");
+            setIsSaving(false);
+            setManualTitle('');
+            alert("Manual saved successfully to Cloud! You can find it in the library.");
+        } catch (err) {
+            console.error("Failed to save manual:", err);
+            alert("Failed to save to cloud: " + err.message);
+        }
     };
 
     const toggleListening = () => {

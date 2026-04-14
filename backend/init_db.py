@@ -3,11 +3,12 @@ from database import engine, Base
 from models import User, RepairLog
 
 def create_tables():
-    print("Creating database tables...")
+    print("Dropping existing tables (Schema update)...")
+    Base.metadata.drop_all(bind=engine)
+    print("Creating new database tables...")
     # This command inspects the models and creates tables in Supabase
     Base.metadata.create_all(bind=engine)
     print("Tables created successfully!")
 
 if __name__ == "__main__":
     create_tables()
-

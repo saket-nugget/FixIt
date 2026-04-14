@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
-import { CONFIG } from '../config/config';
+import { apiFetch } from '../services/api';
 
 export default function Users() {
     const [users, setUsers] = useState([]);
@@ -10,9 +10,7 @@ export default function Users() {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const response = await fetch(`${CONFIG.BACKEND_URL}/users/`);
-                if (!response.ok) throw new Error("Failed to fetch users");
-                const data = await response.json();
+                const data = await apiFetch('/users/');
                 setUsers(data);
             } catch (err) {
                 setError(err.message);
@@ -60,7 +58,7 @@ export default function Users() {
                                          </div>
                                          <div>
                                              <h3 className="text-white font-bold uppercase tracking-tight">{user.username}</h3>
-                                             <p className="text-xs text-[#ccb58e] font-mono">ID: #{String(user.id).padStart(4, '0')}</p>
+                                             <p className="text-[10px] text-[#ccb58e] font-mono uppercase tracking-widest">Technician Verified</p>
                                          </div>
                                      </div>
                                      <div className="space-y-3">
