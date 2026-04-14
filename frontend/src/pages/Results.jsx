@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { CONFIG } from '../config/config';
+import { apiFetch } from '../services/api';
+import { supabase } from '../supabaseClient';
 
 export default function Results() {
     const navigate = useNavigate();

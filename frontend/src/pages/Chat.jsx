@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { chatWithGemini } from '../services/geminiService';
 import Navbar from '../components/Navbar';
+import { apiFetch } from '../services/api';
 
 export default function Chat() {
     const location = useLocation();
